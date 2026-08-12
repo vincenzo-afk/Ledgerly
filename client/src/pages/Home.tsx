@@ -64,22 +64,23 @@ const CATEGORIES = [
 const STORAGE_KEY = "paper-signal-expenses";
 const BUDGET_KEY = "paper-signal-budget";
 
-const dateFromOffset = (offset: number) => {
-  const date = new Date();
-  date.setDate(date.getDate() - offset);
-  return date.toISOString().slice(0, 10);
+const SEEDED_IDS = new Set(["starter-1", "starter-2", "starter-3", "starter-4", "starter-5", "starter-6", "starter-7", "starter-8"]);
+
+const readStoredExpenses = (): Expense[] => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return [];
+    const parsed = JSON.parse(saved) as Expense[];
+    return Array.isArray(parsed) ? parsed.filter((expense) => expense && !SEEDED_IDS.has(expense.id)) : [];
+  } catch {
+    return [];
+  }
 };
 
-const starterExpenses: Expense[] = [
-  { id: "starter-1", amount: 1480, category: "Food", date: dateFromOffset(1), note: "Groceries & fresh produce" },
-  { id: "starter-2", amount: 780, category: "Transport", date: dateFromOffset(2), note: "Metro card top-up" },
-  { id: "starter-3", amount: 3200, category: "Bills", date: dateFromOffset(4), note: "Electricity & internet" },
-  { id: "starter-4", amount: 2250, category: "Shopping", date: dateFromOffset(7), note: "Home essentials" },
-  { id: "starter-5", amount: 960, category: "Entertainment", date: dateFromOffset(9), note: "Cinema & dinner" },
-  { id: "starter-6", amount: 540, category: "Health", date: dateFromOffset(12), note: "Pharmacy" },
-  { id: "starter-7", amount: 1100, category: "Food", date: dateFromOffset(15), note: "Sunday lunch" },
-  { id: "starter-8", amount: 1800, category: "Education", date: dateFromOffset(19), note: "Design course" },
-];
+const readStoredBudget = () => {
+  const saved = localStorage.getItem(BUDGET_KEY);
+  return saved && saved !== "30000" ? Number(saved) || 0 : 0;
+};
 
 const createId = () => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
@@ -126,20 +127,17 @@ function CategoryPill({ category }: { category: string }) {
 }
 
 export default function Home() {
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : starterExpenses;
-    } catch {
-      return starterExpenses;
-    }
-  });
-  const [budget, setBudget] = useState(() => Number(localStorage.getItem(BUDGET_KEY)) || 30000);
+  const [expenses, setExpenses] = useState<Expense[]>(readStoredExpenses);
+  const [budget, setBudget] = useState(readStoredBudget);
   const [period, setPeriod] = useState("this-month");
   const [categoryFilter, setCategoryFilter] = useState("All categories");
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ amount: "", category: "Food", date: new Date().toISOString().slice(0, 10), note: "" });
+  const today = new Date();
+  const currentDateLabel = new Intl.DateTimeFormat("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(today);
+  const currentMonthStamp = new Intl.DateTimeFormat("en-IN", { month: "short" }).format(today).toUpperCase();
+  const currentDayStamp = new Intl.DateTimeFormat("en-IN", { day: "2-digit" }).format(today);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
@@ -194,6 +192,11 @@ export default function Home() {
     return days;
   }, [visibleExpenses]);
 
+  const quietestDay = useMemo(() => {
+    if (!visibleExpenses.length) return null;
+    return timelineData.reduce((quietest, item) => item.amount < quietest.amount ? item : quietest, timelineData[0]);
+  }, [timelineData, visibleExpenses.length]);
+
   const monthlyData = useMemo(() => {
     return Array.from({ length: 6 }, (_, index) => {
       const date = new Date();
@@ -208,7 +211,7 @@ export default function Home() {
     });
   }, [expenses]);
 
-  const budgetProgress = Math.min((stats.total / Math.max(budget, 1)) * 100, 100);
+  const budgetProgress = budget > 0 ? Math.min((stats.total / budget) * 100, 100) : 0;
 
   const resetForm = () => {
     setEditingId(null);
@@ -280,13 +283,13 @@ export default function Home() {
         <div className="sidebar-rule" />
         <div className="budget-module">
           <div className="budget-module__heading"><span className="nav-label">Monthly budget</span><Target size={16} /></div>
-          <div className="budget-input-wrap"><span>₹</span><input aria-label="Monthly budget" type="number" min="0" value={budget} onChange={(event) => setBudget(Number(event.target.value) || 0)} /></div>
+          <div className="budget-input-wrap"><span>₹</span><input aria-label="Monthly budget" type="number" min="0" placeholder="Set amount" value={budget || ""} onChange={(event) => setBudget(Number(event.target.value) || 0)} /></div>
           <div className="budget-progress"><span style={{ width: `${budgetProgress}%` }} /></div>
-          <div className="budget-module__meta"><span>{formatCurrency(stats.total)} used</span><span>{Math.max(0, budget - stats.total) > 0 ? `${formatCurrency(budget - stats.total)} left` : "Budget reached"}</span></div>
+          <div className="budget-module__meta"><span>{formatCurrency(stats.total)} used</span><span>{budget > 0 ? (Math.max(0, budget - stats.total) > 0 ? `${formatCurrency(budget - stats.total)} left` : "Budget reached") : "No limit set"}</span></div>
         </div>
 
         <div className="sidebar-bottom">
-          <div className="profile-card"><div className="profile-avatar">AS</div><div><strong>Arjun S.</strong><span>Good evening</span></div><MoreHorizontal size={17} /></div>
+          <div className="profile-card"><div className="profile-avatar">⌁</div><div><strong>Local ledger</strong><span>Stored in this browser</span></div><MoreHorizontal size={17} /></div>
           <button className="settings-link" type="button" onClick={() => toast.info("Your ledger is stored locally in this browser.")}><Settings2 size={16} /> Preferences</button>
         </div>
       </aside>
@@ -294,29 +297,29 @@ export default function Home() {
       <main className="main-content">
         <header className="topbar">
           <div className="breadcrumb"><span>Workspace</span><span>/</span><strong>Overview</strong></div>
-          <div className="topbar-actions"><span className="sync-note"><span className="sync-dot" /> Saved locally</span><button className="icon-button" type="button" onClick={() => exportFile("json")} aria-label="Export JSON"><Download size={17} /></button><button className="avatar-button" type="button" aria-label="Account">AS</button></div>
+          <div className="topbar-actions"><span className="sync-note"><span className="sync-dot" /> Saved locally</span><button className="icon-button" type="button" onClick={() => exportFile("json")} aria-label="Export JSON"><Download size={17} /></button><button className="avatar-button" type="button" aria-label="Local account">⌁</button></div>
         </header>
 
         <section className="intro-section" id="overview">
           <div>
-            <p className="section-kicker"><span className="coral-line" /> Thursday, 13 August 2026</p>
+            <p className="section-kicker"><span className="coral-line" /> {currentDateLabel}</p>
             <h1>Give every rupee<br /><em>a place in the story.</em></h1>
             <p className="intro-copy">A calmer view of your everyday spending. Read the rhythm, notice the patterns, and keep moving with intention.</p>
           </div>
-          <div className="intro-art" aria-hidden="true"><span className="art-line art-line--one" /><span className="art-line art-line--two" /><span className="art-dot art-dot--one" /><span className="art-dot art-dot--two" /><div className="art-note">AUG<br /><strong>26</strong></div></div>
+          <div className="intro-art" aria-hidden="true"><span className="art-line art-line--one" /><span className="art-line art-line--two" /><span className="art-dot art-dot--one" /><span className="art-dot art-dot--two" /><div className="art-note">{currentMonthStamp}<br /><strong>{currentDayStamp}</strong></div></div>
         </section>
 
         <section className="metric-grid" aria-label="Expense summary">
-          <MetricCard label="Total spent" value={formatCurrency(stats.total)} trend="8.4%" accent="#E35D45" detail="vs. last month" />
-          <MetricCard label="Transactions" value={String(stats.count).padStart(2, "0")} trend="3" accent="#3D7770" detail="this period" />
+          <MetricCard label="Total spent" value={formatCurrency(stats.total)} accent="#E35D45" detail="current view" />
+          <MetricCard label="Transactions" value={String(stats.count).padStart(2, "0")} accent="#3D7770" detail="current view" />
           <MetricCard label="Largest expense" value={formatCurrency(stats.highest)} accent="#C3954B" detail="single transaction" />
-          <MetricCard label="Daily average" value={formatCurrency(stats.average)} trend="steady" accent="#536B82" detail={`${stats.days || 0} active days`} />
+          <MetricCard label="Daily average" value={formatCurrency(stats.average)} accent="#536B82" detail={`${stats.days || 0} recorded days`} />
         </section>
 
         <div className="workspace-grid">
           <div className="analysis-column">
             <section className="panel panel--chart" id="insights">
-              <div className="panel-heading"><div><p className="eyebrow"><span className="section-index">01</span> Spending rhythm</p><h2>Where your money moves</h2></div><div className="chart-legend"><span><i className="legend-swatch legend-swatch--coral" /> Daily spend</span><span><i className="legend-swatch legend-swatch--sage" /> Rolling view</span></div></div>
+              <div className="panel-heading"><div><p className="eyebrow"><span className="section-index">01</span> Spending rhythm</p><h2>Where your money moves</h2></div><div className="chart-legend"><span><i className="legend-swatch legend-swatch--coral" /> Daily spend</span></div></div>
               <div className="chart-wrap chart-wrap--area">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={timelineData} margin={{ top: 16, right: 8, left: -12, bottom: 0 }}>
@@ -329,7 +332,7 @@ export default function Home() {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-              <div className="chart-footnote"><span><TrendingUp size={14} /> Your quietest day is usually Monday.</span><button className="text-button" type="button" onClick={() => toast.info("Daily rhythm is based on your visible expenses.")}>How this is calculated <ArrowUpRight size={14} /></button></div>
+              <div className="chart-footnote"><span><TrendingUp size={14} /> {quietestDay ? `Lowest recorded day: ${quietestDay.label}.` : "Add entries to reveal your daily rhythm."}</span><button className="text-button" type="button" onClick={() => toast.info("Daily rhythm is based on the visible expenses in the last seven days.")}>How this is calculated <ArrowUpRight size={14} /></button></div>
             </section>
 
             <div className="split-panels">
@@ -358,14 +361,14 @@ export default function Home() {
               </form>
             </section>
 
-            <section className="insight-note"><div className="insight-note__icon"><Sparkles size={16} /></div><div><p className="eyebrow">A small observation</p><p>{categoryData[0]?.name || "Your spending"} is leading the month at <strong>{categoryData[0] ? formatCurrency(categoryData[0].value) : "₹0"}</strong>. A little awareness is already a useful change.</p></div></section>
+            <section className="insight-note"><div className="insight-note__icon"><Sparkles size={16} /></div><div><p className="eyebrow">A small observation</p><p>{categoryData.length ? <>{categoryData[0].name} is leading the month at <strong>{formatCurrency(categoryData[0].value)}</strong>. A little awareness is already a useful change.</> : <>Your ledger is waiting for its first line. Add an expense to see your story take shape.</>}</p></div></section>
           </aside>
         </div>
 
         <section className="panel transactions-panel" id="transactions">
           <div className="transactions-header"><div><p className="eyebrow"><span className="section-index">04</span> Your ledger</p><h2>Recent transactions</h2></div><div className="transaction-actions"><button className="secondary-button" type="button" onClick={() => exportFile("csv")}><FileText size={15} /> Export CSV</button><button className="secondary-button secondary-button--icon" type="button" onClick={() => exportFile("json")} aria-label="Export JSON"><FileJson size={16} /></button></div></div>
           <div className="filter-bar"><div className="search-box"><Search size={16} /><input type="search" placeholder="Search your ledger" value={search} onChange={(event) => setSearch(event.target.value)} /></div><div className="filter-control"><Filter size={15} /><select value={period} onChange={(event) => setPeriod(event.target.value)}><option value="this-month">This month</option><option value="last-month">Last month</option><option value="all">All time</option></select><ChevronDown size={14} /></div><div className="filter-control"><ListFilter size={15} /><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}><option>All categories</option>{CATEGORIES.map((category) => <option key={category.name}>{category.name}</option>)}</select><ChevronDown size={14} /></div><span className="filter-count">{visibleExpenses.length} entries</span></div>
-          <div className="transaction-table-wrap"><table className="transaction-table"><thead><tr><th>Transaction</th><th>Category</th><th>Date</th><th className="amount-column">Amount</th><th aria-label="Actions" /></tr></thead><tbody>{visibleExpenses.length ? visibleExpenses.map((expense) => <tr key={expense.id}><td><div className="transaction-name"><span className="transaction-mark" style={{ backgroundColor: getCategory(expense.category).color }} /> <span><strong>{expense.note}</strong><small>Personal expense</small></span></div></td><td><CategoryPill category={expense.category} /></td><td className="date-cell">{formatDate(expense.date)}</td><td className="amount-cell">{formatCurrency(expense.amount)}</td><td><div className="row-actions"><button type="button" onClick={() => handleEdit(expense)} aria-label={`Edit ${expense.note}`}><Pencil size={15} /></button><button type="button" onClick={() => handleDelete(expense.id)} aria-label={`Delete ${expense.note}`}><Trash2 size={15} /></button></div></td></tr>) : <tr><td colSpan={5}><div className="empty-state"><div className="empty-state__mark"><Search size={18} /></div><strong>No entries in this view</strong><span>Try another filter or record a new expense.</span></div></td></tr>}</tbody></table></div>
+          <div className="transaction-table-wrap"><table className="transaction-table"><thead><tr><th>Transaction</th><th>Category</th><th>Date</th><th className="amount-column">Amount</th><th aria-label="Actions" /></tr></thead><tbody>{visibleExpenses.length ? visibleExpenses.map((expense) => <tr key={expense.id}><td><div className="transaction-name"><span className="transaction-mark" style={{ backgroundColor: getCategory(expense.category).color }} /> <span><strong>{expense.note}</strong><small>Local record</small></span></div></td><td><CategoryPill category={expense.category} /></td><td className="date-cell">{formatDate(expense.date)}</td><td className="amount-cell">{formatCurrency(expense.amount)}</td><td><div className="row-actions"><button type="button" onClick={() => handleEdit(expense)} aria-label={`Edit ${expense.note}`}><Pencil size={15} /></button><button type="button" onClick={() => handleDelete(expense.id)} aria-label={`Delete ${expense.note}`}><Trash2 size={15} /></button></div></td></tr>) : <tr><td colSpan={5}><div className="empty-state"><div className="empty-state__mark"><Search size={18} /></div><strong>No entries in this view</strong><span>Try another filter or record a new expense.</span></div></td></tr>}</tbody></table></div>
         </section>
 
         <footer className="app-footer"><span>Ledgerly / Paper & Signal</span><span><span className="footer-dot" /> All records stay in this browser</span></footer>
