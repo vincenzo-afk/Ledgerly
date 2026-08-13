@@ -7,9 +7,9 @@
 
 ## Follow-up: downloads, repository, and discoverability
 
-- [ ] Audit the current browser download implementation and correct blob-link handling.
-- [ ] Remove the profile avatar/photo treatment while preserving a simple account/status affordance.
-- [ ] Add a direct “Open repository” action linked to the Ledgerly GitHub repository.
-- [ ] Add SEO metadata, canonical URL readiness, robots.txt, and sitemap.xml.
+- [x] Audit the current browser download implementation and correct blob-link handling.
+- [x] Remove the profile avatar/photo treatment while preserving a simple account/status affordance.
+- [x] Add a direct “Open repository” action linked to the Ledgerly GitHub repository.
+- [x] Add SEO metadata, canonical URL readiness, robots.txt, and sitemap.xml.
 - [ ] Integrate the user-provided logo after the logo file is supplied.
-- [ ] Validate the updated app and push changes to GitHub using the requested author identity.
+- [x] Validate the updated app and push changes to GitHub using the requested author identity.
