@@ -12,6 +12,7 @@ import {
   FileJson,
   FileText,
   Filter,
+  Github,
   LayoutDashboard,
   ListFilter,
   MoreHorizontal,
@@ -41,6 +42,8 @@ import {
   YAxis,
 } from "recharts";
 import { toast } from "sonner";
+
+const REPOSITORY_URL = "https://github.com/vincenzo-afk/Ledgerly";
 
 type Expense = {
   id: string;
@@ -249,16 +252,23 @@ export default function Home() {
   };
 
   const exportFile = (format: "json" | "csv") => {
+    const csvEscape = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
     const content = format === "json"
       ? JSON.stringify(expenses, null, 2)
-      : ["Date,Category,Amount,Note", ...expenses.map((expense) => `${expense.date},${expense.category},${expense.amount},"${expense.note.replaceAll('"', '""')}"`)].join("\n");
-    const blob = new Blob([content], { type: format === "json" ? "application/json" : "text/csv" });
+      : ["Date,Category,Amount,Note", ...expenses.map((expense) => [expense.date, expense.category, expense.amount, expense.note].map(csvEscape).join(","))].join("\n");
+    const blob = new Blob([content], { type: format === "json" ? "application/json;charset=utf-8" : "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `paper-signal-expenses.${format}`;
+    link.download = `ledgerly-expenses.${format}`;
+    link.setAttribute("aria-hidden", "true");
+    link.style.display = "none";
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => {
+      link.remove();
+      URL.revokeObjectURL(url);
+    }, 100);
     toast.success(`${format.toUpperCase()} export ready.`);
   };
 
@@ -289,7 +299,8 @@ export default function Home() {
         </div>
 
         <div className="sidebar-bottom">
-          <div className="profile-card"><div className="profile-avatar">⌁</div><div><strong>Local ledger</strong><span>Stored in this browser</span></div><MoreHorizontal size={17} /></div>
+          <div className="profile-card"><div><strong>Local ledger</strong><span>Stored in this browser</span></div><MoreHorizontal size={17} /></div>
+          <a className="repo-link" href={REPOSITORY_URL} target="_blank" rel="noreferrer"><Github size={16} /> Open repository <ArrowUpRight size={14} /></a>
           <button className="settings-link" type="button" onClick={() => toast.info("Your ledger is stored locally in this browser.")}><Settings2 size={16} /> Preferences</button>
         </div>
       </aside>
@@ -297,7 +308,7 @@ export default function Home() {
       <main className="main-content">
         <header className="topbar">
           <div className="breadcrumb"><span>Workspace</span><span>/</span><strong>Overview</strong></div>
-          <div className="topbar-actions"><span className="sync-note"><span className="sync-dot" /> Saved locally</span><button className="icon-button" type="button" onClick={() => exportFile("json")} aria-label="Export JSON"><Download size={17} /></button><button className="avatar-button" type="button" aria-label="Local account">⌁</button></div>
+          <div className="topbar-actions"><a className="repo-topbar" href={REPOSITORY_URL} target="_blank" rel="noreferrer"><Github size={15} /> <span>GitHub</span></a><span className="sync-note"><span className="sync-dot" /> Saved locally</span><button className="icon-button" type="button" onClick={() => exportFile("json")} aria-label="Export JSON"><Download size={17} /></button></div>
         </header>
 
         <section className="intro-section" id="overview">
