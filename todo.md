@@ -13,3 +13,9 @@
 - [x] Add SEO metadata, canonical URL readiness, robots.txt, and sitemap.xml.
 - [ ] Integrate the user-provided logo after the logo file is supplied.
 - [x] Validate the updated app and push changes to GitHub using the requested author identity.
+
+## Follow-up: README documentation
+
+- [ ] Review the current project features and repository README state.
+- [ ] Write a complete README for Ledgerly without modifying the pasted content.
+- [ ] Validate, commit, and push the README update to GitHub using the requested author identity.
