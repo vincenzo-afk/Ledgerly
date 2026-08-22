@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a reproducible issue in Ledgerly.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for reporting an issue. Do not include personal financial data or access tokens.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and the expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest set of steps that reproduces the issue.
+      placeholder: |
+        1. Open ...
+        2. Enter ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Share the browser, operating system, and whether browser storage was enabled.
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add screenshots or error messages only after removing private information.

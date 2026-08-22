@@ -1,8 +1,25 @@
 {
-  "name": "expense-tracker",
+  "name": "ledgerly",
   "version": "1.0.0",
+  "description": "A private, browser-based expense tracker with local data storage and visual spending insights.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vincenzo-afk/Ledgerly.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vincenzo-afk/Ledgerly/issues"
+  },
+  "homepage": "https://github.com/vincenzo-afk/Ledgerly#readme",
+  "keywords": [
+    "expense-tracker",
+    "personal-finance",
+    "budget-tracker",
+    "financial-dashboard",
+    "data-visualization",
+    "localstorage"
+  ],
   "scripts": {
     "dev": "vite --host",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",

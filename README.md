@@ -1,117 +1,182 @@
 # Ledgerly
 
-> Personal finance, read clearly.
+> A private browser-based expense tracker for reading everyday spending clearly.
 
-Ledgerly is a private, browser-based expense tracker for recording everyday spending and understanding it through simple visualizations. It is designed around a calm editorial ledger interface: add expenses, set an optional monthly budget, review spending patterns, filter your records, and export your data whenever you need it.
+[![CI](https://github.com/vincenzo-afk/Ledgerly/actions/workflows/ci.yml/badge.svg)](https://github.com/vincenzo-afk/Ledgerly/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-3D7770.svg)](./LICENSE)
 
-All expense records and the optional budget are stored locally in the browser through `localStorage`. Ledgerly does not require an account, backend, database, or server-side financial data storage.
+[Repository](https://github.com/vincenzo-afk/Ledgerly) · [Report a bug](https://github.com/vincenzo-afk/Ledgerly/issues/new?template=bug_report.yml) · [Request a feature](https://github.com/vincenzo-afk/Ledgerly/issues/new?template=feature_request.yml)
+
+Ledgerly is a static personal-finance web application for recording expenses, tracking a monthly budget, and exploring spending patterns without creating an account. The app stores records in the current browser and generates CSV or JSON exports directly on the device.
+
+## Table of contents
+
+- [About](#about)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Technology](#technology)
+- [Getting started](#getting-started)
+- [Using Ledgerly](#using-ledgerly)
+- [Data and privacy](#data-and-privacy)
+- [Project structure](#project-structure)
+- [Quality checks](#quality-checks)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+
+---
+
+## About
+
+Ledgerly provides a focused local ledger for personal expense records. It combines transaction management with a dashboard for totals, spending-by-category, the most recent seven-day rhythm, and a six-month spending view. It is intentionally frontend-only: there is no account system, bank connection, backend API, or database.
 
 ## Features
 
-| Area | Included functionality |
-| --- | --- |
-| Expense records | Add, edit, and delete expenses with amount, category, date, and optional note. |
-| Dashboard | Total spent, transaction count, largest expense, and daily-average summaries. |
-| Visualization | Spending rhythm, category composition, and six-month monthly pulse charts. |
-| Budgeting | Set an optional monthly budget and view the amount used and remaining. |
-| Filtering | Search by note or category, filter by time period, and filter by category. |
-| Export | Download the current local ledger as JSON or CSV. |
-| Privacy | Records remain in the current browser unless the user exports or clears them. |
-| Responsive UI | Editorial desktop rail with a responsive mobile layout. |
-| Discoverability | Descriptive metadata, Open Graph tags, JSON-LD, `robots.txt`, and `sitemap.xml`. |
+| Area            | Available capability                                                                                           |
+| --------------- | -------------------------------------------------------------------------------------------------------------- |
+| Expense records | Add, edit, and delete an expense with an amount, category, date, and optional note.                            |
+| Budget view     | Set an optional monthly budget and see the current filtered spend, remaining balance, or budget-reached state. |
+| Dashboard       | View total spend, transaction count, largest expense, and average spend per recorded day.                      |
+| Charts          | Review a seven-day spending rhythm, category composition, and a six-month monthly-spend view.                  |
+| Filters         | Search notes and categories, then filter records by current month, last month, all time, or category.          |
+| Exports         | Download the full local ledger as `ledgerly-expenses.csv` or `ledgerly-expenses.json`.                         |
+| Privacy         | Keep expense records and the budget in the browser through `localStorage`.                                     |
+| Search metadata | Ship an SEO-aware document shell with structured application data, `robots.txt`, and `sitemap.xml`.            |
 
-## Tech stack
+## Architecture
 
-Ledgerly is built as a static React application with TypeScript. The project uses Vite for development and production builds, Recharts for the data visualizations, Lucide React for interface icons, Tailwind CSS and custom CSS tokens for styling, and Sonner for lightweight notifications.
+```mermaid
+flowchart LR
+  U[Browser user] --> UI[React dashboard]
+  UI <--> LS[(Browser localStorage)]
+  UI --> CH[Recharts visualizations]
+  UI --> EX[CSV and JSON Blob exports]
+```
+
+## Technology
+
+| Layer                       | Technology                                            |
+| --------------------------- | ----------------------------------------------------- |
+| User interface              | React 19, TypeScript, Tailwind CSS, custom CSS tokens |
+| Build and local development | Vite 7, pnpm                                          |
+| Visualizations              | Recharts 2                                            |
+| Icons and feedback          | Lucide React, Sonner                                  |
+| Production server           | Express bundle created by the project build script    |
+| Storage                     | Browser `localStorage` only                           |
+
+---
 
 ## Getting started
 
-### Requirements
+### Prerequisites
 
-- Node.js 20 or newer
-- pnpm 10 or newer
+- Node.js 22, matching the continuous-integration environment.
+- pnpm 10.
 
-### Installation
+### Install and run
 
 ```bash
+git clone https://github.com/vincenzo-afk/Ledgerly.git
+cd Ledgerly
 pnpm install
-```
-
-### Development
-
-```bash
 pnpm dev
 ```
 
-The development server is configured to listen on the Vite host and will print its local URL in the terminal.
+Vite prints the development URL after the server starts.
 
-### Validation
+### Configuration
 
-Run the TypeScript check and production build before sharing changes:
+Ledgerly does not require an app-specific API key, account, database connection, or local environment file to run its expense-tracking features. The application works with browser-local data.
+
+## Using Ledgerly
+
+1. Use **Record an expense** to enter a positive amount, category, date, and optional note.
+2. Set an optional **Monthly budget** from the sidebar.
+3. Use the transaction search and filters to focus the current view.
+4. Select the edit or delete action in a transaction row to maintain a record.
+5. Use **Export CSV** or **Export JSON** to save the complete local ledger outside the browser.
+
+Exports include the date, category, amount, and note fields for every stored expense. The dashboard charts update from the records visible in the app.
+
+## Data and privacy
+
+Ledgerly stores data under the following browser-local keys:
+
+| Key                     | Stored value                                     |
+| ----------------------- | ------------------------------------------------ |
+| `paper-signal-expenses` | The local array of user-created expense records. |
+| `paper-signal-budget`   | The optional budget amount.                      |
+
+The data is tied to the current browser profile and device. Clearing browser storage, using a different browser, or using a private window can remove access to those records. Export data periodically if a separate backup is required.
+
+Ledgerly is not a bank integration, accounting system, financial adviser, or emergency record system.
+
+## Project structure
+
+```text
+.
+├── client/
+│   ├── public/
+│   │   ├── robots.txt              # Crawler directives
+│   │   └── sitemap.xml             # Single-page sitemap
+│   ├── src/
+│   │   ├── pages/Home.tsx          # Dashboard, records, filters, and exports
+│   │   ├── index.css               # Paper & Signal visual system
+│   │   └── App.tsx                 # Application shell and routing
+│   └── index.html                  # Metadata and structured application data
+├── server/index.ts                 # Static production server
+├── .github/workflows/ci.yml        # TypeScript and build validation
+├── package.json                    # Scripts and dependencies
+└── README.md
+```
+
+## Quality checks
+
+Run the same checks used by the repository workflow before opening a pull request:
 
 ```bash
 pnpm run check
 pnpm run build
 ```
 
-The project also includes the following scripts:
+`pnpm run check` runs the TypeScript compiler without emitting files. `pnpm run build` creates the Vite client build and bundles the production Express server. The repository does not currently contain a separate automated test suite.
+
+## Deployment
+
+Create a production build with:
 
 ```bash
-pnpm run preview   # Preview the production build
-pnpm run start     # Start the bundled production server
-pnpm run format    # Format project files with Prettier
+pnpm run build
+pnpm run start
 ```
 
-## How data is stored
+The build command outputs the compiled application to `dist/`. Before publishing on a custom domain, update the canonical URL, Open Graph URL, structured data URL, `robots.txt`, and `sitemap.xml` together so search metadata reflects the actual public address.
 
-Ledgerly uses two browser-local keys:
+## Contributing
 
-| Key | Purpose |
-| --- | --- |
-| `ledgerly-expenses` | Stores the user-created expense records. |
-| `ledgerly-budget` | Stores the optional budget amount. |
+Contributions are welcome through GitHub issues and pull requests.
 
-Because the data is local, it is specific to the browser profile and device where it was entered. Clearing site data, changing browsers, or using private browsing can remove access to those records. Use JSON or CSV export to keep a personal backup.
+1. Create a branch using a focused name such as `feature/csv-import` or `fix/export-encoding`.
+2. Make the smallest relevant change and keep the interface responsive.
+3. Run `pnpm run check` and `pnpm run build`.
+4. Open a pull request using the provided template, describing the change and validation performed.
 
-## Export formats
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the detailed contribution workflow.
 
-The **JSON export** preserves the expense objects in a machine-readable format. The **CSV export** includes the date, category, amount, and note columns for use in spreadsheets or other finance tools. Both exports are generated in the browser and downloaded as `ledgerly-expenses.json` or `ledgerly-expenses.csv`.
+## Security
 
-## SEO and publishing
-
-The document shell includes a descriptive title and description, canonical URL, robots directive, Open Graph metadata, Twitter card metadata, and a `WebApplication` JSON-LD block. The static public files include:
-
-- `client/public/robots.txt`
-- `client/public/sitemap.xml`
-
-Search engines can index a site only after it is published at a publicly reachable URL. After publishing, update the canonical URL and sitemap host in `client/index.html` and `client/public/sitemap.xml` if the final domain differs from the configured address. Submitting the final sitemap in Google Search Console can help Google discover the site, but indexing and ranking are controlled by Google and are not immediate or guaranteed.
-
-## Project structure
-
-```text
-client/
-  index.html              # SEO-aware document shell
-  public/                 # robots.txt, sitemap.xml, and small public files
-  src/
-    pages/Home.tsx        # Ledgerly dashboard and expense interactions
-    index.css             # Paper & Signal visual system and responsive layout
-    App.tsx               # Application shell and routing
-server/
-  index.ts                # Static production server used by the template
-```
-
-## Repository
-
-The source repository is available at [github.com/vincenzo-afk/Ledgerly](https://github.com/vincenzo-afk/Ledgerly).
-
-## Privacy note
-
-Ledgerly is a frontend-only personal ledger. It is not a bank connection, financial adviser, accounting service, or emergency record system. Review exported files carefully before sharing them because they may contain personal spending information.
+Please do not disclose a security concern in a public issue. See [SECURITY.md](./SECURITY.md) for the reporting process and project scope.
 
 ## License
 
-This project is distributed under the MIT License. See [`LICENSE`](./LICENSE) for the full license text.
+Ledgerly is licensed under the [MIT License](./LICENSE). Copyright © 2026 BHARANI KUMAR S.
 
-## Maintainer
+## Acknowledgments
 
-Ledgerly is maintained by **BHARANI KUMAR S**.
+Ledgerly uses [React](https://react.dev/), [Vite](https://vite.dev/), [Recharts](https://recharts.org/), [Lucide](https://lucide.dev/), and [Tailwind CSS](https://tailwindcss.com/).
+
+---
+
+<p align="center"><a href="#ledgerly">Back to top</a> · <a href="https://github.com/vincenzo-afk/Ledgerly">View the repository</a></p>

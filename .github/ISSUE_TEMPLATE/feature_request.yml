@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest an improvement to Ledgerly.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: Describe the user need and avoid including private financial data.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Explain the desired behavior and any alternatives considered.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
