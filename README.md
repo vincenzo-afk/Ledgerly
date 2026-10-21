@@ -70,6 +70,8 @@ flowchart LR
 
 ## Getting started
 
+[![Launch on PicoRunner](https://picorunner.com/badges/launch.svg)](https://picorunner.com/launch/?repository=https%3A%2F%2Fgithub.com%2Fvincenzo-afk%2FLedgerly)
+
 ### Prerequisites
 
 - Node.js 22, matching the continuous-integration environment.
